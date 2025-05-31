@@ -11,8 +11,8 @@ import Rect from "@/assets/Rect.js";
 import BrushIcon from "@/assets/BrushIcon";
 import Clear from "@/assets/Clear";
 
-const Toolbar = ({onClear}) => {
-    const { settings, setSettings, undo, redo, clearCanvas } = useTool();
+const Toolbar = ({ onClear }) => {
+    const { settings, setSettings, undo, redo, clearCanvas  } = useTool();
 
     const setTool = (tool) => {
         setSettings({ ...settings, tool });
@@ -45,6 +45,7 @@ const Toolbar = ({onClear}) => {
             <button className="cursor-pointer" onClick={redo}>
                 <Redo className="text-[#B3B1B1] w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-11 lg:h-11 xl:w-12 xl:h-12" />
             </button>
+
             <button className="cursor-pointer" onClick={clearCanvas}>
                 <Clear className={getIconClasses("clear")} />
             </button>

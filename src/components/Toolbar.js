@@ -24,7 +24,7 @@ const Toolbar = ({ onClear }) => {
 
     return (
         <div
-            className="flex flex-col gap-4 md:gap-4 lg:gap-4 p-4 bg-[#222222] h-auto border border-[#363434] rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] items-center w-full"
+            className="flex flex-col gap-4 md:gap-4 lg:gap-6 p-2 bg-[#222222] h-auto border border-[#363434] rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] items-center w-full"
             style={{ boxShadow: "4px 4px 4px 0px #00000040" }}
         >
             <button className="mt-10 cursor-pointer" onClick={() => setTool("cursor")}>
@@ -47,7 +47,7 @@ const Toolbar = ({ onClear }) => {
             </button>
 
             <button className="cursor-pointer" onClick={clearCanvas}>
-                <Clear className={getIconClasses("clear")} />
+                <Clear className="text-[#B3B1B1] w-8 h-8 sm:w-8 sm:h-8 md:w-8 md:h-8lg:w-8 lg:h-8 xl:w-10 xl:h-10"  />
             </button>
         </div>
     );

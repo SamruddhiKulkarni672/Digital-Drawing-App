@@ -4,13 +4,14 @@ import Toolbar from '../components/Toolbar';
 import Canvas from '../components/Canvas';
 import DrawPanel from '../components/DrawPanel';
 import { ToolProvider } from '../context/ToolContext';
+import PreviewPanel from '@/components/PreviewPanel';
 
 export default function Home() {
-  const canvasRef = useRef(); // 🔧 This will allow us to call canvasRef.current.clearCanvas()
+  const canvasRef = useRef(); //  This will allow us to call canvasRef.current.clearCanvas()
 
   return (
    <ToolProvider>
-            <div className=" relative  flex flex-col h-screen w-screen bg-[#1E1E1E]  ">
+            <div className=" relative  flex flex-col h-full  w-screen bg-[#1E1E1E]  ">
                 {/* <div className="absolute top-4 left-4 z-10">
           <Toolbar />
         </div>
@@ -38,10 +39,10 @@ export default function Home() {
 
 
                             {/* preview section */}
-                            <div className="flex w-[25%] ">1</div>
+                            <div className="flex w-[25%] mt-1 md:mt-3 p-2"><PreviewPanel/></div>
                         </div>
                         {/* draw panel */}
-                        <div className="flex h-[25%]    "><DrawPanel /></div>
+                        <div className="flex h-[25%]  mt-3  "><DrawPanel /></div>
                     </div>
                 </div>
             </div>

@@ -3,12 +3,17 @@ import React, { createContext, useContext, useRef, useState } from "react";
 
 const ToolContext = createContext();
 
+
 export const ToolProvider = ({ children }) => {
+  const previewCanvasRef = useRef(null);
+
   const [settings, setSettings] = useState({
     tool: "brush",
+    brushType: 'pencil',
     color: "#ffffff",
     size: 5,
     opacity: 1.0,
+    dabType: "brush1",
   });
 
   const canvasRef = useRef(null);
@@ -59,6 +64,7 @@ export const ToolProvider = ({ children }) => {
         undo,
         redo,
         clearCanvas,
+        previewCanvasRef,
       }}
     >
       {children}

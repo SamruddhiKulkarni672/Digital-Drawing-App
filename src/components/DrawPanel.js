@@ -3,9 +3,24 @@ import React, { Fragment, useState, useEffect } from "react";
 import { useTool } from "../context/ToolContext";
 import Wheel from "@uiw/react-color-wheel";
 import { hsvaToHex } from "@uiw/color-convert";
-import ShadeSlider from "@uiw/react-color-shade-slider";
+import Image from "next/image";
+// import eraser from "../assets/eraser.png";
+// import Eraser from "../assets/eraser.svg";
+// import Pencil from "../assets/pencil.svg";
+// import FlatBrush from "../assets/flatBrush.svg";
+// import OilPaint from "../assets/oilPaint.svg";
+// import Marker from "../assets/marker.svg";
+// import SketchPen from "../assets/sketchPen.svg";
+// import Blender from "../assets/blender.svg";
 
-import { Brush, Eraser } from "lucide-react";
+import ShadeSlider from "@uiw/react-color-shade-slider";
+import CustomEraser from "@/assets/EraserIcon.js";
+import FlatBrush from "@/assets/FlatBrush";
+import Marker from "@/assets/Marker";
+import Blender from "@/assets/Blender";
+import OilPaint from "@/assets/OilPaint";
+import Pencil from "@/assets/Pencil";
+import Sketchpen from "@/assets/Sketchpen";
 
 const DrawPanel = () => {
     const { settings, setSettings } = useTool();
@@ -18,6 +33,7 @@ const DrawPanel = () => {
             color: hex,
             opacity: hsva.a,
         }));
+        console.log("brush selectes");
     }, [hsva, setSettings]);
 
     return (
@@ -76,9 +92,14 @@ const DrawPanel = () => {
 
         <div className="flex flex-row w-full">
             {/* color picker  */}
-            <div className="flex flex-col mt-0 p-2 ml-4  w-[15%] ">
+            <div className="flex flex-col mt-0 p-1 lg:ml-2 xl:ml-4  w-[15%] ">
                 <Fragment>
-                    <Wheel color={hsva} onChange={(color) => setHsva({ ...hsva, ...color.hsva })} />{" "}
+                    <div className="transform scale-75 origin-top-left">
+                        <Wheel
+                            color={hsva}
+                            onChange={(color) => setHsva({ ...hsva, ...color.hsva })}
+                        />
+                    </div>{" "}
                     {/* <div
                         style={{
                             width: "100%",
@@ -180,7 +201,49 @@ const DrawPanel = () => {
             </div>
 
             {/* brush selector  */}
-            <div className="flex   w-[50%]">3</div>
+            <div className="flex flex-row  w-[50%]">
+                {/* <Image src={eraser} alt="Eraser" width={80} height={50} />{" "} */}
+                <div
+                    className="flex m- ml-14 mt-8"
+                    onClick={() => setSettings({ ...settings, tool: "eraser" })}
+                >
+                    <CustomEraser width={50} height={140} />
+                </div>
+
+                <div
+                    className="flex m-   mt-0 "
+                    onClick={() => setSettings({ ...settings, brushType: "pencil" })}
+                >
+                    <Pencil width={80} height={160} />
+                </div>
+
+                <div className="flex m-   mt-0 ">
+                    <FlatBrush width={70} height={160} />
+                </div>
+
+                <div className="flex m-   mt-2 "                       onClick={() => setSettings({ ...settings, brushType: "crayon" })}
+>
+                    <Sketchpen width={70} height={160} />
+                </div>
+
+                <div className="flex m-  mt-2 ">
+                    <Blender width={70} height={160} />
+                </div>
+
+                <div
+                    className="flex m-   mt-2 "
+                    onClick={() => setSettings({ ...settings, brushType: "watercolor" })}
+                >
+                    <Marker width={70} height={160} />
+                </div>
+
+                <div
+                    className="flex m-  mt-0 "
+                    onClick={() => setSettings({ ...settings, brushType: "oil" })}
+                >
+                    <OilPaint width={70} height={160} />
+                </div>
+            </div>
         </div>
     );
 };

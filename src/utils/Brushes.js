@@ -1,5 +1,7 @@
  
+
 export const brushTypes = {
+     
 
     pencil :(ctx , x,y , settings) => {
         ctx.lineTo(x,y);
@@ -9,6 +11,8 @@ export const brushTypes = {
         ctx.lineCap = 'round';
         ctx.stroke();
     },
+
+
     crayon: (ctx, x, y, settings) => {
     ctx.lineTo(x + Math.random(), y + Math.random());
     ctx.strokeStyle = settings.color;

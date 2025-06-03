@@ -34,7 +34,7 @@ export default function Home() {
 
 
                             {/* canvas */}
-                            <div className="flex w-[75%] p-3 pt-7 "><Canvas /></div>
+                            <div className="flex w-[75%] p-2   xl:p-3  pt-4 xl:pt-7 "><Canvas /></div>
 
 
 

@@ -14,7 +14,7 @@ const Canvas = () => {
   const brushImage = useRef(null);
   const { settings, pushToUndo, canvasRef, ctxRef, previewCanvasRef } = useTool();
 
-  const ASPECT_RATIO = 2.2;
+  const ASPECT_RATIO = 2.5;
 
   // Load brush image
   useEffect(() => {
@@ -54,7 +54,7 @@ const Canvas = () => {
 
     ctxRef.current = ctx;
 
-    updatePreview(); // initial update
+    updatePreview(); 
   };
 
   useEffect(() => {
@@ -145,7 +145,7 @@ const Canvas = () => {
   };
 
   return (
-    <div className="w-full max-w-[1300px] mx-auto">
+    <div className="w-full max-w-[1050px] mx-auto">
       <canvas
         ref={canvasRef}
         className={`rounded-[12px] bg-[#323232] block p-0 w-full h-auto ${

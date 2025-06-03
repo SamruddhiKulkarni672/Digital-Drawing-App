@@ -21,6 +21,7 @@ import Blender from "@/assets/Blender";
 import OilPaint from "@/assets/OilPaint";
 import Pencil from "@/assets/Pencil";
 import Sketchpen from "@/assets/Sketchpen";
+import { Fullscreen } from "lucide-react";
 
 const DrawPanel = () => {
     const { settings, setSettings } = useTool();
@@ -174,30 +175,35 @@ const DrawPanel = () => {
 
                     <div></div>
                 </div>
-                {/* <Fragment>
-                    <ShadeSlider
-                        className="rounded-2xl"
-                        radius={12}
-                        hsva={hsva}
-                        style={{ width: 210, marginTop: 20 }}
-                        onChange={(newShade) => {
-                            setHsva({ ...hsva, ...newShade });
-                        }}
-                        pointer={({ color, style }) => {
-                            return (
-                                <div style={style}>
-                                    <div
-                                        style={{
-                                            width: 12,
-                                            height: 12,
-                                            backgroundColor: color,
-                                         }}
-                                    />
-                                </div>
-                            );
-                        }}
-                    />
-                </Fragment> */}
+                <div
+                    className="flex flex-row ml-3 w-[95%] mt-3 mx-2 p-3 border border-[#2D2C2C] rounded-[12px] items-center justify-evenly bg-gradient-to-r from-[#292A29] to-[#1B1B1C] shadow-md"
+                    style={{ boxShadow: "4px 4px 4px 0px #00000040" }}
+                >
+                    <Fragment>
+                        <ShadeSlider
+                            className="rounded-2xl"
+                            radius={12}
+                            hsva={hsva}
+                            style={{ width: "80%", marginTop: 2, height: 20 }}
+                            onChange={(newShade) => {
+                                setHsva({ ...hsva, ...newShade });
+                            }}
+                            pointer={({ color, style }) => {
+                                return (
+                                    <div style={style}>
+                                        <div
+                                            style={{
+                                                width: 12,
+                                                height: 12,
+                                                backgroundColor: color,
+                                            }}
+                                        />
+                                    </div>
+                                );
+                            }}
+                        />
+                    </Fragment>
+                </div>
             </div>
 
             {/* brush selector  */}
@@ -221,8 +227,10 @@ const DrawPanel = () => {
                     <FlatBrush width={70} height={160} />
                 </div>
 
-                <div className="flex m-   mt-2 "                       onClick={() => setSettings({ ...settings, brushType: "crayon" })}
->
+                <div
+                    className="flex m-   mt-2 "
+                    onClick={() => setSettings({ ...settings, brushType: "crayon" })}
+                >
                     <Sketchpen width={70} height={160} />
                 </div>
 

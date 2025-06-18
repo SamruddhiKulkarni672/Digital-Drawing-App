@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import Save from "@/assets/Save";
 import Print from "@/assets/Print";
 import ZoomIn from "@/assets/ZoomIn";
@@ -9,9 +9,9 @@ import { useTool } from "../context/ToolContext";
 import defaultRefImage from "../assets/refImage.png";
 
 function PreviewPanel() {
-    const { previewCanvasRef, zoomIn, zoomOut } = useTool();
+    const { previewCanvasRef, zoomIn, zoomOut,zoom, saveCanvas, canvasContainerRef  } = useTool();
     const [refImageUrl, setRefImageUrl] = useState(null);
-    const fileInputRef = useRef(null);  
+    const fileInputRef = useRef(null);
 
     const handleImageUpload = (e) => {
         const file = e.target.files?.[0];
@@ -25,6 +25,13 @@ function PreviewPanel() {
         };
         reader.readAsDataURL(file);
     };
+
+    useEffect(() => {
+        if (canvasContainerRef.current) {
+            canvasContainerRef.current.style.transform = `scale(${zoom})`;
+            canvasContainerRef.current.style.transformOrigin = "top left";  
+        }
+    }, [zoom]);
 
     const removeImage = () => {
         setRefImageUrl(null);
@@ -47,7 +54,7 @@ function PreviewPanel() {
                 <button className="cursor-pointer" onClick={zoomOut}>
                     <ZoomOut />
                 </button>
-                <button className="cursor-pointer">
+                <button className="cursor-pointer" onClick={saveCanvas}>
                     <Save />
                 </button>
                 <button className="cursor-pointer">

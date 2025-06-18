@@ -12,10 +12,16 @@ import BrushIcon from "@/assets/BrushIcon";
 import Clear from "@/assets/Clear";
 
 const Toolbar = ({ onClear }) => {
-    const { settings, setSettings, undo, redo, clearCanvas  } = useTool();
+    const { settings, setSettings, undo, redo, clearCanvas, setBackgroundImage } = useTool();
 
     const setTool = (tool) => {
         setSettings({ ...settings, tool });
+    };
+
+    const handleSelectTool = () => {
+        setTool("cursor");
+        const bg = "/brushes/Waterpaper-Texture.jpg";
+        setBackgroundImage(bg);
     };
 
     const getIconClasses = (toolName) =>
@@ -25,9 +31,14 @@ const Toolbar = ({ onClear }) => {
     return (
         <div
             className="flex flex-col gap-4 md:gap-4 lg:gap-6 p-2 bg-[#222222] h-auto border border-[#363434] rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] items-center w-full"
-            style={{ boxShadow: "4px 4px 4px 0px #00000040" }}
+            style={{
+                boxShadow: `
+               4px 4px 8px 0px #00000040,     
+                -4px -4px 8px 0px #534D4D80     
+                        `,
+            }}
         >
-            <button className="mt-10 cursor-pointer" onClick={() => setTool("cursor")}>
+            <button className="mt-10 cursor-pointer" onClick={handleSelectTool}>
                 <Select className={getIconClasses("cursor")} />
             </button>
             <button className="cursor-pointer" onClick={() => setTool("brush")}>
@@ -47,7 +58,7 @@ const Toolbar = ({ onClear }) => {
             </button>
 
             <button className="cursor-pointer" onClick={clearCanvas}>
-                <Clear className="text-[#B3B1B1] w-8 h-8 sm:w-8 sm:h-8 md:w-8 md:h-8lg:w-8 lg:h-8 xl:w-10 xl:h-10"  />
+                <Clear className="text-[#B3B1B1] w-8 h-8 sm:w-8 sm:h-8 md:w-8 md:h-8lg:w-8 lg:h-8 xl:w-10 xl:h-10" />
             </button>
         </div>
     );

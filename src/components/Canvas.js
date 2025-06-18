@@ -2,168 +2,219 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useTool } from "../context/ToolContext";
 import { brushTypes } from "@/utils/Brushes";
-
-// Clean base64 image string (placeholder brush)
-const dabBase64 =
-  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAJElEQVQoU2NkYGD4z0AEMMDEgAkGhgYmBgaGgSmAwMDAwAAncgNMoBPj2gAAAABJRU5ErkJggg==";
+import { dabImages } from "@/utils/Dabs";
 
 const Canvas = () => {
-  const [drawing, setDrawing] = useState(false);
-  const lastX = useRef(0);
-  const lastY = useRef(0);
-  const brushImage = useRef(null);
-  const { settings, pushToUndo, canvasRef, ctxRef, previewCanvasRef } = useTool();
+    const [drawing, setDrawing] = useState(false);
+    const lastX = useRef(0);
+    const lastY = useRef(0);
+    const brushImage = useRef(null);
 
-  const ASPECT_RATIO = 2.5;
+    const {
+        settings,
+        pushToUndo,
+        canvasRef,
+        ctxRef,
+        previewCanvasRef,
+        zoom,
+        canvasContainerRef,
+        setZoom,
+        backgroundImage,
+        setBackgroundImage,
+    } = useTool();
 
-  // Load brush image
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => {
-      brushImage.current = img;
+    const ASPECT_RATIO = 2.5;
+
+    // Load brush image
+    useEffect(() => {
+        const dabKey = settings.dabType;
+        if (!dabKey || !dabImages[dabKey]) {
+            brushImage.current = null;
+            return;
+        }
+        const img = new Image();
+        img.onload = () => {
+            brushImage.current = img;
+        };
+        img.src = dabImages[dabKey];
+    }, [settings.dabType]);
+
+    // Zoom handler
+    const handleWheel = (e) => {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.1 : -0.1;
+        const newZoom = Math.min(Math.max(zoom + delta, 0.2), 5);
+
+        const container = canvasContainerRef.current;
+        if (!container || !canvasRef.current) return;
+
+        const rect = container.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left;
+        const offsetY = e.clientY - rect.top;
+
+        container.style.transformOrigin = `${offsetX}px ${offsetY}px`;
+        setZoom(newZoom);
     };
-    img.onerror = (e) => {
-      console.error("Failed to load brush image", e);
+
+    const drawBackgroundImage = () => {
+        if (!canvasRef.current || !backgroundImage) return;
+        const ctx = ctxRef.current;
+        const img = new Image();
+        img.onload = () => {
+            ctx.fillStyle = "#323232";
+            ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+            ctx.drawImage(img, 0, 0, canvasRef.current.width, canvasRef.current.height);
+            updatePreview();
+        };
+        img.src = backgroundImage;
     };
-    img.src = dabBase64;
-  }, []);
 
-  const resizeCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const container = canvas.parentElement;
-    const displayWidth = container.offsetWidth;
-    const displayHeight = displayWidth / ASPECT_RATIO;
-
-    const oldImage = ctxRef.current?.getImageData(0, 0, canvas.width, canvas.height);
-
-    canvas.width = displayWidth;
-    canvas.height = displayHeight;
-
-    canvas.style.width = `${displayWidth}px`;
-    canvas.style.height = `${displayHeight}px`;
-
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#323232";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    if (oldImage) {
-      ctx.putImageData(oldImage, 0, 0);
-    }
-
-    ctxRef.current = ctx;
-
-    updatePreview(); 
-  };
-
-  useEffect(() => {
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
-    return () => window.removeEventListener("resize", resizeCanvas);
-  }, []);
-
-  const getOffset = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: ((e.clientX - rect.left) / rect.width) * canvas.width,
-      y: ((e.clientY - rect.top) / rect.height) * canvas.height,
+    const saveToLocalStorage = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const dataUrl = canvas.toDataURL("image/png");
+        localStorage.setItem("canvas-image", dataUrl);
     };
-  };
 
-  const updatePreview = () => {
-    const mainCanvas = canvasRef.current;
-    const previewCanvas = previewCanvasRef?.current;
-    if (!mainCanvas || !previewCanvas) return;
+    const resizeCanvas = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const container = canvas.parentElement;
+        const displayWidth = container.offsetWidth;
+        const displayHeight = displayWidth / ASPECT_RATIO;
 
-    const previewCtx = previewCanvas.getContext("2d");
-    const scale = 0.25;
-    const width = mainCanvas.width * scale;
-    const height = mainCanvas.height * scale;
+        canvas.width = displayWidth;
+        canvas.height = displayHeight;
+        canvas.style.width = `${displayWidth}px`;
+        canvas.style.height = `${displayHeight}px`;
 
-    previewCanvas.width = width;
-    previewCanvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#323232";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctxRef.current = ctx;
+    };
 
-    previewCtx.clearRect(0, 0, width, height);
-    previewCtx.drawImage(mainCanvas, 0, 0, width, height);
-  };
+    useEffect(() => {
+        resizeCanvas();
+        const handle = () => resizeCanvas();
+        window.addEventListener("resize", handle);
 
-  const startDrawing = (e) => {
-    if (!["brush", "eraser"].includes(settings.tool)) return;
+        // Restore background and canvas drawing after resize
+        const savedBg = localStorage.getItem("canvas-bg");
+        if (savedBg) setBackgroundImage(savedBg);
 
-    const ctx = ctxRef.current;
-    pushToUndo(ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height));
+        const savedCanvasImage = localStorage.getItem("canvas-image");
+        if (savedCanvasImage) {
+            const img = new Image();
+            img.onload = () => {
+                if (canvasRef.current && ctxRef.current) {
+                    ctxRef.current.drawImage(img, 0, 0, canvasRef.current.width, canvasRef.current.height);
+                    updatePreview();
+                }
+            };
+            img.src = savedCanvasImage;
+        }
 
-    setDrawing(true);
+        return () => window.removeEventListener("resize", handle);
+    }, []);
 
-    const { x, y } = getOffset(e);
-    lastX.current = x;
-    lastY.current = y;
+    useEffect(() => {
+        drawBackgroundImage();
+    }, [backgroundImage]);
 
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-  };
+    const getOffset = (e) => {
+        const rect = canvasRef.current.getBoundingClientRect();
+        return {
+            x: ((e.clientX - rect.left) / rect.width) * canvasRef.current.width,
+            y: ((e.clientY - rect.top) / rect.height) * canvasRef.current.height,
+        };
+    };
 
-  const draw = (e) => {
-    if (!drawing) return;
+    const updatePreview = () => {
+        const mainCanvas = canvasRef.current;
+        const previewCanvas = previewCanvasRef.current;
+        if (!mainCanvas || !previewCanvas) return;
+        const previewCtx = previewCanvas.getContext("2d");
+        const scale = 0.25;
+        const width = mainCanvas.width * scale;
+        const height = mainCanvas.height * scale;
+        previewCanvas.width = width;
+        previewCanvas.height = height;
+        previewCtx.clearRect(0, 0, width, height);
+        previewCtx.drawImage(mainCanvas, 0, 0, width, height);
+    };
 
-    const ctx = ctxRef.current;
-    const { x, y } = getOffset(e);
+    const startDrawing = (e) => {
+        if (!["brush", "eraser"].includes(settings.tool)) return;
+        const ctx = ctxRef.current;
+        pushToUndo(ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height));
+        setDrawing(true);
+        const { x, y } = getOffset(e);
+        lastX.current = x;
+        lastY.current = y;
+        ctx.save();
+        ctx.setTransform(zoom, 0, 0, zoom, 0, 0);
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    };
 
-    if (settings.tool === "eraser") {
-      ctx.beginPath();
-      ctx.moveTo(lastX.current, lastY.current);
-      ctx.lineTo(x, y);
-      ctx.strokeStyle = "#1e1e1e";
-      ctx.lineWidth = settings.size;
-      ctx.globalAlpha = 1.0;
-      ctx.stroke();
-    } else {
-      const brush = brushTypes[settings.brushType] || brushTypes.pencil;
-      ctx.beginPath();
-      ctx.moveTo(lastX.current, lastY.current);
+    const draw = (e) => {
+        if (!drawing) return;
+        const ctx = ctxRef.current;
+        const { x, y } = getOffset(e);
 
-      if (settings.brushType === "texture" && brushImage.current) {
-        brush(ctx, x, y, settings, lastX.current, lastY.current, brushImage.current);
-      } else {
-        brush(ctx, x, y, settings);
-      }
-    }
+        if (settings.tool === "eraser") {
+            ctx.beginPath();
+            ctx.moveTo(lastX.current, lastY.current);
+            ctx.lineTo(x, y);
+            ctx.strokeStyle = "#1e1e1e";
+            ctx.lineWidth = settings.size;
+            ctx.globalAlpha = 1.0;
+            ctx.stroke();
+        } else {
+            const brush = brushTypes[settings.brushType] || brushTypes.pencil;
+            if (["dabBrush", "watercolor", "spray","flat"].includes(settings.brushType) && brushImage.current) {
+                brush(ctx, x, y, settings, lastX.current, lastY.current, brushImage.current);
+            } else {
+                brush(ctx, x, y, settings);
+            }
+        }
 
-    lastX.current = x;
-    lastY.current = y;
+        lastX.current = x;
+        lastY.current = y;
+        updatePreview();
+        saveToLocalStorage();
+    };
 
-    updatePreview(); // sync live preview
-  };
+    const endDrawing = () => {
+        if (drawing) {
+            const ctx = ctxRef.current;
+            ctx.closePath();
+            ctx.restore();
+            setDrawing(false);
+        }
+    };
 
-  const endDrawing = () => {
-    if (drawing) {
-      ctxRef.current.closePath();
-      setDrawing(false);
-    }
-  };
-
-  return (
-    <div className="w-full max-w-[1050px] mx-auto">
-      <canvas
-        ref={canvasRef}
-        className={`rounded-[12px] bg-[#323232] block p-0 w-full h-auto ${
-          settings.tool === "brush"
-            ? "cursor-crosshair"
-            : settings.tool === "eraser"
-            ? "cursor-cell"
-            : settings.tool === "fill"
-            ? "cursor-pointer"
-            : "cursor-default"
-        }`}
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={endDrawing}
-        onMouseLeave={endDrawing}
-      />
-    </div>
-  );
+    return (
+        <div ref={canvasContainerRef} className="w-full max-w-[1050px] mx-auto"  >
+            <canvas
+                ref={canvasRef}
+                className={`rounded-[12px] bg-[#323232] block p-0 w-full h-auto ${
+                    settings.tool === "brush"
+                        ? "cursor-crosshair"
+                        : settings.tool === "eraser"
+                        ? "cursor-cell"
+                        : settings.tool === "fill"
+                        ? "cursor-pointer"
+                        : "cursor-default"
+                }`}
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={endDrawing}
+                onMouseLeave={endDrawing}
+            />
+        </div>
+    );
 };
 
 export default Canvas;

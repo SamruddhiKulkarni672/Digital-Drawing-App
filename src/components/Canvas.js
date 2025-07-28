@@ -4,8 +4,32 @@ import { useTool } from "../context/ToolContext";
 import { brushTypes } from "@/utils/Brushes";
 import { dabImages } from "@/utils/Dabs";
 
+let ffmpeg = null;
+let fetchFileFn = null;
+
+//  Lazy-load FFmpeg only in browser (SSR safe)
+const getFFmpeg = async () => {
+    if (!ffmpeg) {
+        const { createFFmpeg, fetchFile } = await import("@ffmpeg/ffmpeg");
+        ffmpeg = createFFmpeg({ log: true });
+        fetchFileFn = fetchFile;
+        await ffmpeg.load();
+    }
+    return ffmpeg;
+};
+
 const Canvas = () => {
     const [drawing, setDrawing] = useState(false);
+    const [recording, setRecording] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+    const [videoUrl, setVideoUrl] = useState(null);
+    const [filter, setFilter] = useState("none");
+    const [resolution, setResolution] = useState("720");
+    const [musicFile, setMusicFile] = useState(null);
+    const [editing, setEditing] = useState(false);
+
+    const mediaRecorderRef = useRef(null);
+    const recordedChunksRef = useRef([]);
     const lastX = useRef(0);
     const lastY = useRef(0);
     const brushImage = useRef(null);
@@ -25,7 +49,7 @@ const Canvas = () => {
 
     const ASPECT_RATIO = 2.5;
 
-    // Load brush image
+    //  Load brush image
     useEffect(() => {
         const dabKey = settings.dabType;
         if (!dabKey || !dabImages[dabKey]) {
@@ -33,29 +57,25 @@ const Canvas = () => {
             return;
         }
         const img = new Image();
-        img.onload = () => {
-            brushImage.current = img;
-        };
+        img.onload = () => (brushImage.current = img);
         img.src = dabImages[dabKey];
     }, [settings.dabType]);
 
-    // Zoom handler
+    //  Zoom handling
     const handleWheel = (e) => {
         e.preventDefault();
         const delta = e.deltaY < 0 ? 0.1 : -0.1;
         const newZoom = Math.min(Math.max(zoom + delta, 0.2), 5);
-
         const container = canvasContainerRef.current;
         if (!container || !canvasRef.current) return;
-
         const rect = container.getBoundingClientRect();
         const offsetX = e.clientX - rect.left;
         const offsetY = e.clientY - rect.top;
-
         container.style.transformOrigin = `${offsetX}px ${offsetY}px`;
         setZoom(newZoom);
     };
 
+    //  Draw background image
     const drawBackgroundImage = () => {
         if (!canvasRef.current || !backgroundImage) return;
         const ctx = ctxRef.current;
@@ -76,6 +96,7 @@ const Canvas = () => {
         localStorage.setItem("canvas-image", dataUrl);
     };
 
+    // Canvas resize
     const resizeCanvas = () => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -99,7 +120,6 @@ const Canvas = () => {
         const handle = () => resizeCanvas();
         window.addEventListener("resize", handle);
 
-        // Restore background and canvas drawing after resize
         const savedBg = localStorage.getItem("canvas-bg");
         if (savedBg) setBackgroundImage(savedBg);
 
@@ -108,7 +128,13 @@ const Canvas = () => {
             const img = new Image();
             img.onload = () => {
                 if (canvasRef.current && ctxRef.current) {
-                    ctxRef.current.drawImage(img, 0, 0, canvasRef.current.width, canvasRef.current.height);
+                    ctxRef.current.drawImage(
+                        img,
+                        0,
+                        0,
+                        canvasRef.current.width,
+                        canvasRef.current.height
+                    );
                     updatePreview();
                 }
             };
@@ -144,6 +170,7 @@ const Canvas = () => {
         previewCtx.drawImage(mainCanvas, 0, 0, width, height);
     };
 
+    //  Drawing
     const startDrawing = (e) => {
         if (!["brush", "eraser"].includes(settings.tool)) return;
         const ctx = ctxRef.current;
@@ -173,7 +200,12 @@ const Canvas = () => {
             ctx.stroke();
         } else {
             const brush = brushTypes[settings.brushType] || brushTypes.pencil;
-            if (["dabBrush", "watercolor", "spray","flat"].includes(settings.brushType) && brushImage.current) {
+            if (
+                ["dabBrush", "watercolor", "spray", "flat", "dry", "crayon", "waterstamp"].includes(
+                    settings.brushType
+                ) &&
+                brushImage.current
+            ) {
                 brush(ctx, x, y, settings, lastX.current, lastY.current, brushImage.current);
             } else {
                 brush(ctx, x, y, settings);
@@ -195,24 +227,258 @@ const Canvas = () => {
         }
     };
 
+    //  Recording
+    const toggleRecording = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        if (!recording) {
+            const stream = canvas.captureStream(30);
+            const recorder = new MediaRecorder(stream, {
+                mimeType: "video/webm;codecs=vp9",
+            });
+
+            recorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+            };
+
+            recorder.onstop = () => {
+                const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+                recordedChunksRef.current = [];
+                const url = URL.createObjectURL(blob);
+                setVideoUrl(url);
+                setShowModal(true);
+            };
+
+            recorder.start();
+            mediaRecorderRef.current = recorder;
+            setRecording(true);
+        } else {
+            mediaRecorderRef.current?.stop();
+            setRecording(false);
+        }
+    };
+
+    //  Share video
+    const shareVideo = async () => {
+        const blob = await fetch(videoUrl).then((r) => r.blob());
+        const file = new File([blob], "drawing-recording.webm", { type: "video/webm" });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+                title: "My Drawing Recording",
+                text: "Check out my digital drawing!",
+                files: [file],
+            });
+        } else {
+            alert("Sharing not supported on this browser. Please download manually.");
+        }
+    };
+
+    //  Edit and export with ffmpeg
+    const editAndExport = async () => {
+        if (!videoUrl) return;
+        setEditing(true);
+
+        try {
+            const ff = await getFFmpeg();
+            ff.FS("writeFile", "input.webm", await fetchFileFn(videoUrl));
+            if (musicFile) {
+                ff.FS("writeFile", "music.mp3", await fetchFileFn(musicFile));
+            }
+
+            const resolutionCmd = `scale=-2:${resolution}`;
+            const filterCmd = filter !== "none" ? `,${filter}` : "";
+
+            const args = [
+                "-i",
+                "input.webm",
+                ...(musicFile ? ["-i", "music.mp3"] : []),
+                "-vf",
+                `${resolutionCmd}${filterCmd}`,
+                ...(musicFile ? ["-shortest"] : []),
+                "-c:v",
+                "libvpx-vp9",
+                "-c:a",
+                "libvorbis",
+                "output.webm",
+            ];
+
+            await ff.run(...args);
+            const data = ff.FS("readFile", "output.webm");
+            const editedUrl = URL.createObjectURL(new Blob([data.buffer], { type: "video/webm" }));
+            setVideoUrl(editedUrl);
+            alert("Video edited successfully!");
+        } catch (err) {
+            console.error("Editing failed:", err);
+        } finally {
+            setEditing(false);
+        }
+    };
+
     return (
-        <div ref={canvasContainerRef} className="w-full max-w-[1050px] mx-auto"  >
-            <canvas
-                ref={canvasRef}
-                className={`rounded-[12px] bg-[#323232] block p-0 w-full h-auto ${
-                    settings.tool === "brush"
-                        ? "cursor-crosshair"
-                        : settings.tool === "eraser"
-                        ? "cursor-cell"
-                        : settings.tool === "fill"
-                        ? "cursor-pointer"
-                        : "cursor-default"
-                }`}
-                onMouseDown={startDrawing}
-                onMouseMove={draw}
-                onMouseUp={endDrawing}
-                onMouseLeave={endDrawing}
-            />
+        <div className="w-full max-w-[1050px] mx-auto space-y-4">
+            <div className="flex items-center space-x-4">
+                {/* Outer Circle */}
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#080808] to-[#2d2f2d] flex items-center justify-center">
+                    {/* Inner Circle */}
+                    <button
+                        onClick={toggleRecording}
+                        className={`w-10 h-10 rounded-full bg-gradient-to-br ${
+                            recording ? "from-[#ac4e62] to-[#8f4253]" : "from-[#464648] to-[#2d2d30]"
+                        } flex items-center justify-center shadow-lg`}
+                        style={{ boxShadow: "4px 4px 4px 0px #00000040" }}
+                    >
+                        {/* Icon */}
+                        {recording ? (
+                            <svg fill="white" viewBox="0 0 24 24" className="w-7 h-7">
+                                <rect x="6" y="6" width="12" height="12" />
+                            </svg>
+                        ) : (
+                            <svg fill="#4080C5" viewBox="0 0 24 24" className="w-7 h-7 ml-1">
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                        )}
+                    </button>
+                </div>
+
+                {/* Text */}
+                <span className="text-gray-400 text-lg">
+                    {recording ? "Stop Recording" : "Start Recording"}
+                </span>
+            </div>
+
+            <div ref={canvasContainerRef}>
+                <canvas
+                    ref={canvasRef}
+                    className={`rounded-[12px] bg-[#323232] block p-0 w-full h-auto ${
+                        settings.tool === "brush"
+                            ? "cursor-crosshair"
+                            : settings.tool === "eraser"
+                            ? "cursor-cell"
+                            : settings.tool === "fill"
+                            ? "cursor-pointer"
+                            : "cursor-default"
+                    }`}
+                    onMouseDown={startDrawing}
+                    onMouseMove={draw}
+                    onMouseUp={endDrawing}
+                    onMouseLeave={endDrawing}
+                />
+            </div>
+
+            {/*  Modal */}
+            {showModal && (
+                <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-[9999]  ">
+                    <div
+                        className="bg-[#1E1E1E] p-6 rounded-lg w-[500px] space-y-4 border-2 border-[#363434]"
+                        style={{ boxShadow: "9px 9px 4px 0px #00000040" }}
+                    >
+                        <h2 className="text-lg font-semibold text-[#d8d7d3]">Video Preview</h2>
+                        <video src={videoUrl} controls className="rounded-md w-full"></video>
+
+                        <div className="space-y-2 text-[#b9b8b4]">
+                            <label className="block text-sm">Resolution:</label>
+                            <select
+                                className="flex flex-row w-[100%] mt-3 p-1 px-5   border border-[#363434] rounded-[7px]   bg-gradient-to-r from-[#292A29] to-[#1B1B1C] shadow-xl"
+                                value={resolution}
+                                onChange={(e) => setResolution(e.target.value)}
+                            >
+                                <option value="480">480p</option>
+                                <option value="720">720p</option>
+                                <option value="1080">1080p</option>
+                            </select>
+
+                            <label className="block text-sm mt-2">Filter:</label>
+                            <select
+                                className="flex flex-row w-[100%] mt-3 p-1 px-5 border border-[#363434] rounded-[7px]   bg-gradient-to-r from-[#292A29] to-[#1B1B1C] shadow-xl"
+                                value={filter}
+                                onChange={(e) => setFilter(e.target.value)}
+                            >
+                                <option value="none">None</option>
+                                <option value="hue=s=0">Grayscale</option>
+                                <option value="eq=brightness=0.1">Brighten</option>
+                                <option value="noise=alls=20:allf=t">Noise</option>
+                            </select>
+
+                            <label className="block text-sm mt-2">Add Background Music:</label>
+                            <input
+                                type="file"
+                                accept="audio/*"
+                                onChange={(e) => setMusicFile(e.target.files[0])}
+                            />
+                        </div>
+
+                        {/* <div className="flex justify-between mt-4">
+                            <button
+                                className="bg-[#9e44edcb] text-white px-4 py-2 rounded"
+                                onClick={() => {
+                                    const a = document.createElement("a");
+                                    a.href = videoUrl;
+                                    a.download = "drawing-recording.webm";
+                                    a.click();
+                                }}
+                            >
+                                Download
+                            </button>
+                            <button
+                                className="bg-[#c740d9bf] text-white px-4 py-2 rounded"
+                                onClick={shareVideo}
+                            >
+                                Share
+                            </button>
+                            <button
+                                className="bg-[#db3dd1c7] text-white px-4 py-2 rounded"
+                                disabled={editing}
+                                onClick={editAndExport}
+                            >
+                                {editing ? "Editing..." : "Edit & Export"}
+                            </button>
+                            <button
+                                className="bg-[#f439c8c0] text-white px-4 py-2 rounded"
+                                onClick={() => setShowModal(false)}
+                            >
+                                Close
+                            </button>
+                        </div> */}
+                        <div className="flex justify-between mt-4">
+                            <button
+                                className="bg-[#9e44ed45] text-[#c48bf6] px-4 py-2 rounded [text-shadow:1px_1px_3px_rgba(0,0,0,0.6)]"
+                                onClick={() => {
+                                    const a = document.createElement("a");
+                                    a.href = videoUrl;
+                                    a.download = "drawing-recording.webm";
+                                    a.click();
+                                }}
+                            >
+                                Download
+                            </button>
+
+                            <button
+                                className="bg-[#c740d956] text-[#f081ff] px-4 py-2 rounded [text-shadow:1px_1px_3px_rgba(0,0,0,0.6)]"
+                                onClick={shareVideo}
+                            >
+                                Share
+                            </button>
+
+                            <button
+                                className="bg-[#db3dd13a] text-[#f475ec] px-4 py-2 rounded [text-shadow:1px_1px_3px_rgba(0,0,0,0.6)]"
+                                disabled={editing}
+                                onClick={editAndExport}
+                            >
+                                {editing ? "Editing..." : "Edit & Export"}
+                            </button>
+
+                            <button
+                                className="bg-[#f439c84d] text-[#f88bdf] px-4 py-2 rounded [text-shadow:1px_1px_3px_rgba(0,0,0,0.6)]"
+                                onClick={() => setShowModal(false)}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

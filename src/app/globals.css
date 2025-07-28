@@ -71,6 +71,17 @@ input[type="range"].custom-range::-moz-range-thumb {
 }
 
 
+/* in globals.css */
+.scroll-smooth::-webkit-scrollbar {
+  height: 8px;
+}
+.scroll-smooth::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+.scroll-smooth::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
 
 
 

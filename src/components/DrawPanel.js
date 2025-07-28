@@ -14,6 +14,9 @@ import OilPaint from "@/assets/OilPaint";
 import Pencil from "@/assets/Pencil";
 import Sketchpen from "@/assets/Sketchpen";
 import Spray from "@/assets/Spray";
+import DryBrush from "@/assets/DryBrush";
+import Crayon from "@/assets/Crayon";
+import Waterstamp from "@/assets/WaterStamp";
 
 const DrawPanel = () => {
     const { settings, setSettings } = useTool();
@@ -138,7 +141,7 @@ const DrawPanel = () => {
             </div>
 
             {/* Brush selector */}
-            <div className="flex flex-row w-[50%]">
+            <div className="flex w-[50%] overflow-x-auto whitespace-nowrap p-2 scroll-smooth">
                 {/* Eraser */}
                 <div
                     className="flex justify-center items-center flex-col ml-14 mt-8"
@@ -166,7 +169,7 @@ const DrawPanel = () => {
                     }
                 >
                     <Pencil width={80} height={160} />
-                     {settings.brushType === "pencil" ? (
+                    {settings.brushType === "pencil" ? (
                         <div className="flex h-2 w-[40px] bg-[#4080C5] rounded-full"></div>
                     ) : (
                         <div></div>
@@ -186,7 +189,7 @@ const DrawPanel = () => {
                     }
                 >
                     <FlatBrush width={70} height={160} />
-                     {settings.brushType === "flat" ? (
+                    {settings.brushType === "flat" ? (
                         <div className="flex h-2 w-[40px] bg-[#4080C5] rounded-full"></div>
                     ) : (
                         <div></div>
@@ -206,7 +209,7 @@ const DrawPanel = () => {
                     }
                 >
                     <Sketchpen width={70} height={160} />
-                     {settings.brushType === "dabBrush" ? (
+                    {settings.brushType === "dabBrush" ? (
                         <div className="flex h-2 w-[40px] bg-[#4080C5] rounded-full"></div>
                     ) : (
                         <div></div>
@@ -226,7 +229,7 @@ const DrawPanel = () => {
                     }
                 >
                     <Blender width={70} height={160} />
-                     {settings.brushType === "blender" ? (
+                    {settings.brushType === "blender" ? (
                         <div className="flex h-2 w-[40px] bg-[#4080C5] rounded-full"></div>
                     ) : (
                         <div></div>
@@ -246,7 +249,7 @@ const DrawPanel = () => {
                     }
                 >
                     <Marker width={70} height={160} />
-                     {settings.brushType === "watercolor" ? (
+                    {settings.brushType === "watercolor" ? (
                         <div className="flex h-2 w-[40px] bg-[#4080C5] rounded-full"></div>
                     ) : (
                         <div></div>
@@ -266,7 +269,7 @@ const DrawPanel = () => {
                     }
                 >
                     <OilPaint width={70} height={160} />
-                     {settings.brushType === "oil" ? (
+                    {settings.brushType === "oil" ? (
                         <div className="flex h-2 w-[40px] bg-[#4080C5] rounded-full"></div>
                     ) : (
                         <div></div>
@@ -287,8 +290,68 @@ const DrawPanel = () => {
                 >
                     <Spray width={100} height={170} />
 
-                     {settings.brushType === "spray" ? (
+                    {settings.brushType === "spray" ? (
                         <div className="flex h-2 justify-center items-center w-[60px] bg-[#4080C5] rounded-full"></div>
+                    ) : (
+                        <div></div>
+                    )}
+                </div>
+
+                {/* Dry Brush */}
+                <div
+                    className="flex justify-center items-center flex-col mt-0"
+                    onClick={() =>
+                        setSettings((prev) => ({
+                            ...prev,
+                            tool: "brush",
+                            brushType: "dry",
+                            dabType: brushToDabMap["dry"] || null,
+                        }))
+                    }
+                >
+                    <DryBrush width={70} height={160} />
+                    {settings.brushType === "dry" ? (
+                        <div className="flex h-2 w-[40px] bg-[#4080C5] rounded-full"></div>
+                    ) : (
+                        <div></div>
+                    )}
+                </div>
+
+                {/* Crayon */}
+                <div
+                    className="flex justify-center items-center flex-col mt-0"
+                    onClick={() =>
+                        setSettings((prev) => ({
+                            ...prev,
+                            tool: "brush",
+                            brushType: "crayon",
+                            dabType: brushToDabMap["crayon"] || null,
+                        }))
+                    }
+                >
+                    <Crayon width={70} height={160} />
+                    {settings.brushType === "crayon" ? (
+                        <div className="flex h-2 w-[40px] bg-[#4080C5] rounded-full"></div>
+                    ) : (
+                        <div></div>
+                    )}
+                </div>
+
+                {/* Waterstamp */}
+                <div
+                    className="flex justify-center items-center flex-col mt-0"
+                    onClick={() =>
+                        setSettings((prev) => ({
+                            ...prev,
+                            tool: "brush",
+                            brushType: "waterstamp",
+                            dabType: brushToDabMap["waterstamp"] || null,
+                        }))
+                    }
+                >
+                    <Waterstamp width={70} height={160} />
+                    {settings.brushType === "waterstamp" ? (
+                        <div className="flex h-2 w-[40px] bg-[#4080C5] rounded-full"></div>
                     ) : (
                         <div></div>
                     )}

@@ -9,10 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@ffmpeg/core": "^0.12.4",
+    "@ffmpeg/ffmpeg": "^0.12.7",
     "@uiw/react-color-shade-slider": "^2.5.5",
     "@uiw/react-color-wheel": "^2.5.5",
     "lucide-react": "^0.511.0",
     "next": "15.3.2",
+    "openai": "^5.10.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

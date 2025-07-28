@@ -20,7 +20,7 @@ const Toolbar = ({ onClear }) => {
 
     const handleSelectTool = () => {
         setTool("cursor");
-        const bg = "/brushes/Waterpaper-Texture.jpg";
+        const bg = "/brushes/waterpaper.jpg";
         setBackgroundImage(bg);
     };
 
@@ -47,8 +47,8 @@ const Toolbar = ({ onClear }) => {
             <button className="cursor-pointer" onClick={() => setTool("fill")}>
                 <Fill className={getIconClasses("fill")} />
             </button>
-            <button className="cursor-pointer" onClick={() => setTool("rect")}>
-                <Rect className={getIconClasses("rect")} />
+            <button className="cursor-pointer" onClick={() => setTool("shape")}>
+                <Rect className={getIconClasses("shape")} />
             </button>
             <button className="cursor-pointer" onClick={undo}>
                 <Undo className="text-[#B3B1B1] w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-11 lg:h-11 xl:w-12 xl:h-12" />

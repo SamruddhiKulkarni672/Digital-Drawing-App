@@ -9,4 +9,8 @@ export const dabImages = {
     flat: "/brushes/fan.png",
 
     spray: "/brushes/spary1.png",
+    dry: "/brushes/dry.png",           
+    waterstamp: "/brushes/waterstamp.png",  
+    crayon: "/brushes/marker.png", 
+  
 };

@@ -1,17 +1,20 @@
 "use client";
 import React, { useRef } from "react";
 import Toolbar from "../components/Toolbar";
-import Canvas from "../components/Canvas";
+// import Canvas from "../components/Canvas";
 import DrawPanel from "../components/DrawPanel";
 import { ToolProvider } from "../context/ToolContext";
 import PreviewPanel from "@/components/PreviewPanel";
+import dynamic from "next/dynamic";
+const Canvas = dynamic(() => import("../components/Canvas"), { ssr: false });
+
 
 export default function Home() {
     const canvasRef = useRef(); //  This will allow us to call canvasRef.current.clearCanvas()
 
     return (
         <ToolProvider>
-            <div className=" relative  flex flex-col h-full  w-screen bg-[#1E1E1E]  ">
+            <div className=" relative  flex flex-col h-screen  w-screen bg-[#1E1E1E]  ">
                 {/* <div className="absolute top-4 left-4 z-10">
           <Toolbar />
         </div>
@@ -20,7 +23,7 @@ export default function Home() {
         </div>
         <DrawPanel /> */}
 
-                <div className="w-full h-[4%] bg-[#252524] border-b-2 border-[#414141]">1</div>
+                {/* <div className="w-full h-[4%] bg-[#252524] border-b-2 border-[#414141]">1</div> */}
                 <div className="flex flex-row w-full   h-[96%]">
                     {/* toolbar  */}
                     <div className=" flex h-full w-[7%] p-2 md:p-3 lg:p-4 z-50 py-6 justify-center ">
@@ -32,7 +35,7 @@ export default function Home() {
 
                         <div className="flex flex-row h-[75%]  *:">
                             {/* canvas */}
-                            <div className="flex w-[75%] p-2   xl:p-3  z-10 pt-4 xl:pt-7 ">
+                            <div className="flex w-[75%] p-2   xl:p-3  z-[9999] pt-4 xl:pt-7 ">
                                 <Canvas />
                             </div>
 

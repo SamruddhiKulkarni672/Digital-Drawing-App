@@ -3,9 +3,14 @@ export const brushToDabMap = {
   dabBrush: "dabBrush",
   watercolor: "watercolor",
   pencil: null,
-  flat:   "flat",
+  flat: "flat",
   oil: null,
   blender: null,
   spray:"spray",
+  dry: "dry",
+    crayon: "crayon",
+    waterstamp: "waterstamp",
+    eraser: null,
+
 };
   

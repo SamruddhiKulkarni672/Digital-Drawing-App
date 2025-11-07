@@ -8,15 +8,44 @@ let ffmpeg = null;
 let fetchFileFn = null;
 
 //  Lazy-load FFmpeg only in browser (SSR safe)
+// const getFFmpeg = async () => {
+//     if (!ffmpeg) {
+//         const { createFFmpeg, fetchFile } = await import("@ffmpeg/ffmpeg");
+//         ffmpeg = createFFmpeg({ log: true });
+//         fetchFileFn = fetchFile;
+//         await ffmpeg.load();
+//     }
+//     return ffmpeg;
+// };
+
+ 
+ 
+
 const getFFmpeg = async () => {
-    if (!ffmpeg) {
-        const { createFFmpeg, fetchFile } = await import("@ffmpeg/ffmpeg");
-        ffmpeg = createFFmpeg({ log: true });
-        fetchFileFn = fetchFile;
-        await ffmpeg.load();
+  if (!ffmpeg) {
+    const ffmpegModule = await import("@ffmpeg/ffmpeg");
+    console.log("FFmpeg module:", ffmpegModule); // 👀 check what’s inside
+
+    const createFFmpeg =
+      ffmpegModule.createFFmpeg ||
+      (ffmpegModule.default && ffmpegModule.default.createFFmpeg);
+
+    const fetchFile =
+      ffmpegModule.fetchFile ||
+      (ffmpegModule.default && ffmpegModule.default.fetchFile);
+
+    if (!createFFmpeg || !fetchFile) {
+      throw new Error("❌ Could not find createFFmpeg or fetchFile export");
     }
-    return ffmpeg;
+
+    ffmpeg = createFFmpeg({ log: true });
+    fetchFileFn = fetchFile;
+    await ffmpeg.load();
+  }
+  return ffmpeg;
 };
+
+
 
 const Canvas = () => {
     const [drawing, setDrawing] = useState(false);
@@ -170,6 +199,11 @@ const Canvas = () => {
         previewCtx.drawImage(mainCanvas, 0, 0, width, height);
     };
 
+    useEffect(() => {
+        console.log("Current tool:", settings.tool);
+        console.log("Current brush:", settings.brushType);
+    }, [settings]);
+
     //  Drawing
     const startDrawing = (e) => {
         if (!["brush", "eraser"].includes(settings.tool)) return;
@@ -183,6 +217,7 @@ const Canvas = () => {
         ctx.setTransform(zoom, 0, 0, zoom, 0, 0);
         ctx.beginPath();
         ctx.moveTo(x, y);
+        console.log("Drawing with tool:", settings.tool);
     };
 
     const draw = (e) => {
@@ -199,11 +234,19 @@ const Canvas = () => {
             ctx.globalAlpha = 1.0;
             ctx.stroke();
         } else {
-            const brush = brushTypes[settings.brushType] || brushTypes.pencil;
+            const brush = brushTypes[settings.brushType] || brushTypes.ballpen || brushTypes.pencil;
             if (
-                ["dabBrush", "watercolor", "spray", "flat", "dry", "crayon", "waterstamp"].includes(
-                    settings.brushType
-                ) &&
+                [
+                    "dabBrush",
+                    "watercolor",
+                    "spray",
+                    "flat",
+                    "dry",
+                    "crayon",
+                    "waterstamp",
+                    "eraserBrush",
+                    "pencil"
+                ].includes(settings.brushType) &&
                 brushImage.current
             ) {
                 brush(ctx, x, y, settings, lastX.current, lastY.current, brushImage.current);
@@ -317,15 +360,17 @@ const Canvas = () => {
     };
 
     return (
-        <div className="w-full max-w-[1050px] mx-auto space-y-4">
+        <div className="w-full max-w-[1050px] mx-1 space-y-1">
             <div className="flex items-center space-x-4">
                 {/* Outer Circle */}
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#080808] to-[#2d2f2d] flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#080808] to-[#2d2f2d] flex items-center justify-center">
                     {/* Inner Circle */}
                     <button
                         onClick={toggleRecording}
-                        className={`w-10 h-10 rounded-full bg-gradient-to-br ${
-                            recording ? "from-[#ac4e62] to-[#8f4253]" : "from-[#464648] to-[#2d2d30]"
+                        className={`w-8 h-8 rounded-full bg-gradient-to-br ${
+                            recording
+                                ? "from-[#ac4e62] to-[#8f4253]"
+                                : "from-[#464648] to-[#2d2d30]"
                         } flex items-center justify-center shadow-lg`}
                         style={{ boxShadow: "4px 4px 4px 0px #00000040" }}
                     >

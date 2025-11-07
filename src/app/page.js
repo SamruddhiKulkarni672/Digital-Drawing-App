@@ -35,7 +35,7 @@ export default function Home() {
 
                         <div className="flex flex-row h-[75%]  *:">
                             {/* canvas */}
-                            <div className="flex w-[75%] p-2   xl:p-3  z-[9999] pt-4 xl:pt-7 ">
+                            <div className="flex w-[75%]  my-1 py-1    xl:p-3  z-[9999] pt-0 xl:pt-4 ">
                                 <Canvas />
                             </div>
 
@@ -45,7 +45,7 @@ export default function Home() {
                             </div>
                         </div>
                         {/* draw panel */}
-                        <div className="flex h-[25%] z-40  mt-3  ">
+                        <div className="flex h-[25%] z-40  mt-2  ">
                             <DrawPanel />
                         </div>
                     </div>

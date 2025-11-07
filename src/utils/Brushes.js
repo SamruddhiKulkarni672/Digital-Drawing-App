@@ -1,12 +1,40 @@
 export const brushTypes = {
-    pencil: (ctx, x, y, settings) => {
-        ctx.lineTo(x, y);
-        ctx.strokeStyle = settings.color;
-        ctx.lineWidth = settings.size;
-        ctx.globalAlpha = 1.0;
-        ctx.lineCap = "round";
-        ctx.stroke();
-    },
+    // pencil: (ctx, x, y, settings) => {
+    //     ctx.lineTo(x, y);
+    //     ctx.strokeStyle = settings.color;
+    //     ctx.lineWidth = settings.size;
+    //     ctx.globalAlpha = 1.0;
+    //     ctx.lineCap = "round";
+    //     ctx.stroke();
+    // },
+
+    pencil: (ctx, x, y, settings, lastX, lastY, dabImage) => {
+    if (!dabImage) return;
+
+    const size = settings.size/6 || 1.5;
+    const color = settings.color || "#000000";
+
+    // Calculate distance between points
+    const dx = x - lastX;
+    const dy = y - lastY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    // Spacing between dabs (smaller = denser)
+    const spacing = size * 0.6;
+
+    for (let i = 0; i < dist; i += spacing) {
+        const t = i / dist;
+        const dabX = lastX + t * dx;
+        const dabY = lastY + t * dy;
+
+        ctx.save();
+        ctx.globalAlpha = 0.9;
+        ctx.translate(dabX, dabY);
+        ctx.drawImage(dabImage, -size / 2, -size / 2, size, size);
+        ctx.restore();
+    }
+}
+,
 
     watercolor: (ctx, x, y, settings, lastX, lastY, dabImage) => {
         if (!dabImage) return;
@@ -52,39 +80,37 @@ export const brushTypes = {
         ctx.stroke();
     },
 
- blender: (ctx, x, y, settings, lastX, lastY) => {
-    const size = settings.size * 2;
-    const radius = size / 2;
+    blender: (ctx, x, y, settings, lastX, lastY) => {
+        const size = settings.size * 2;
+        const radius = size / 2;
 
-    const dx = x - lastX;
-    const dy = y - lastY;
-    const dist = Math.hypot(dx, dy);
-    const steps = Math.ceil(dist / 2);
+        const dx = x - lastX;
+        const dy = y - lastY;
+        const dist = Math.hypot(dx, dy);
+        const steps = Math.ceil(dist / 2);
 
-    for (let i = 0; i < steps; i++) {
-        const t = i / steps;
-        const xi = Math.floor(lastX + dx * t);
-        const yi = Math.floor(lastY + dy * t);
+        for (let i = 0; i < steps; i++) {
+            const t = i / steps;
+            const xi = Math.floor(lastX + dx * t);
+            const yi = Math.floor(lastY + dy * t);
 
-        const sampleX = xi - radius;
-        const sampleY = yi - radius;
+            const sampleX = xi - radius;
+            const sampleY = yi - radius;
 
-        try {
-            // 1. Sample the region
-            const imageData = ctx.getImageData(sampleX, sampleY, size, size);
+            try {
+                // 1. Sample the region
+                const imageData = ctx.getImageData(sampleX, sampleY, size, size);
 
-            // 2. Place it slightly forward to smear
-            const offsetX = sampleX + dx * 0.4;
-            const offsetY = sampleY + dy * 0.4;
+                // 2. Place it slightly forward to smear
+                const offsetX = sampleX + dx * 0.4;
+                const offsetY = sampleY + dy * 0.4;
 
-            ctx.putImageData(imageData, offsetX, offsetY);
-        } catch (err) {
-            // Silently ignore out-of-bound errors
+                ctx.putImageData(imageData, offsetX, offsetY);
+            } catch (err) {
+                // Silently ignore out-of-bound errors
+            }
         }
-    }
-}
-,
-
+    },
     dabBrush: (ctx, x, y, settings, lastX, lastY, img) => {
         const dist = Math.hypot(x - lastX, y - lastY);
         const steps = Math.ceil(dist / (settings.size * 0.5));
@@ -274,24 +300,50 @@ export const brushTypes = {
         }
     },
 
+    eraserBrush: (ctx, x, y, settings, lastX, lastY, dabImage) => {
+        if (!dabImage) return;
 
-    eraser: (ctx, x, y, settings, lastX, lastY) => {
-    const dist = Math.hypot(x - lastX, y - lastY);
-    const steps = Math.ceil(dist / 2);
+        const dist = Math.hypot(x - lastX, y - lastY);
+        const steps = Math.ceil(dist / (settings.size * 0.5));
+        const size = settings.size * 2;
 
-    ctx.save();
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.lineCap = "round";
-    ctx.strokeStyle = "rgba(0,0,0,1)";
-    ctx.lineWidth = settings.size;
+        for (let i = 0; i < steps; i++) {
+            const t = i / steps;
+            const xi = lastX + (x - lastX) * t;
+            const yi = lastY + (y - lastY) * t;
 
-    ctx.beginPath();
-    ctx.moveTo(lastX, lastY);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-    ctx.closePath();
+            const offCanvas = document.createElement("canvas");
+            offCanvas.width = size;
+            offCanvas.height = size;
+            const offCtx = offCanvas.getContext("2d");
 
-    ctx.restore();
-},
+            offCtx.globalAlpha = 1.0;
+            offCtx.drawImage(dabImage, 0, 0, size, size);
 
+            ctx.save();
+            // ctx.globalCompositeOperation = "destination-out";
+            ctx.drawImage(offCanvas, xi - size / 2, yi - size / 2);
+            ctx.restore();
+        }
+    },
+
+    ballpen: (ctx, x, y, settings) => {
+        const color = settings.color || "#0000ff";
+        const size = settings.size || 1.2;
+
+        const segments = 5;
+        for (let i = 0; i < segments; i++) {
+            const offsetX = (Math.random() - 0.5) * 1.2;
+            const offsetY = (Math.random() - 0.5) * 1.2;
+
+            ctx.beginPath();
+            ctx.moveTo(x + offsetX, y + offsetY);
+            ctx.lineTo(x + offsetX + 0.1, y + offsetY + 0.1);  
+            ctx.strokeStyle = color;
+            ctx.lineWidth = size;
+            ctx.globalAlpha = 0.2;
+            ctx.lineCap = "round";
+            ctx.stroke();
+        }
+    },
 };

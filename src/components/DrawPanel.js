@@ -17,6 +17,7 @@ import Spray from "@/assets/Spray";
 import DryBrush from "@/assets/DryBrush";
 import Crayon from "@/assets/Crayon";
 import Waterstamp from "@/assets/WaterStamp";
+import BallPen from "@/assets/BallPen";
 
 const DrawPanel = () => {
     const { settings, setSettings } = useTool();
@@ -39,9 +40,9 @@ const DrawPanel = () => {
     return (
         <div className="flex flex-row w-full">
             {/* Color picker */}
-            <div className="flex flex-col mt-0 p-1 lg:ml-2 xl:ml-4  w-[15%] ">
+            <div className="flex flex-col mt-0 p-1 lg:ml-2 xl:ml-4  w-[13%] ">
                 <Fragment>
-                    <div className="transform scale-75 origin-top-left">
+                    <div className="transform scale-[75%] origin-top-left">
                         <Wheel
                             color={hsva}
                             onChange={(color) => setHsva({ ...hsva, ...color.hsva })}
@@ -51,12 +52,12 @@ const DrawPanel = () => {
             </div>
 
             {/* Brush settings */}
-            <div className="flex flex-col  w-[35%]">
+            <div className="flex flex-col  w-[30%]">
                 <div
                     className="flex flex-col m-3 rounded-[12px] mt-0 bg-[#222222] border border-[#2B2929]"
                     style={{ boxShadow: "4px 4px 4px 0px #00000040" }}
                 >
-                    <div className="flex flex-col m-2 p-2">
+                    <div className="flex flex-col mx-2 p-2 py-1">
                         <label className="block text-md ml-6">Brush Size</label>
                         <div className="flex justify-center items-center w-full">
                             <input
@@ -141,15 +142,22 @@ const DrawPanel = () => {
             </div>
 
             {/* Brush selector */}
-            <div className="flex w-[50%] overflow-x-auto whitespace-nowrap p-2 scroll-smooth">
+            <div className="flex w-[54%] overflow-x-auto whitespace-nowrap p-2 scroll-smooth">
                 {/* Eraser */}
                 <div
                     className="flex justify-center items-center flex-col ml-14 mt-8"
-                    onClick={() => setSettings({ ...settings, tool: "eraser" })}
+                    onClick={() =>
+                        setSettings((prev) => ({
+                            ...prev,
+                            tool: "brush",
+                            brushType: "eraserBrush",
+                            dabType: brushToDabMap["eraserBrush"] || null,
+                        }))
+                    }
                 >
                     <CustomEraser width={50} height={100} />
 
-                    {settings.tool === "eraser" ? (
+                    {settings.brushType === "eraserBrush" ? (
                         <div className="flex h-2 w-[40px] bg-[#4080C5] rounded-full"></div>
                     ) : (
                         <div></div>
@@ -170,6 +178,26 @@ const DrawPanel = () => {
                 >
                     <Pencil width={80} height={160} />
                     {settings.brushType === "pencil" ? (
+                        <div className="flex h-2 w-[40px] bg-[#4080C5] rounded-full"></div>
+                    ) : (
+                        <div></div>
+                    )}
+                </div>
+
+                {/* ballpen  */}
+                 <div
+                    className="flex justify-center items-center flex-col mt-0"
+                    onClick={() =>
+                        setSettings((prev) => ({
+                            ...prev,
+                            tool: "brush",
+                            brushType: "ballpen",
+                            dabType: brushToDabMap["ballpen"] || null,
+                        }))
+                    }
+                >
+                    <BallPen width={80} height={160} />
+                    {settings.brushType === "ballpen" ? (
                         <div className="flex h-2 w-[40px] bg-[#4080C5] rounded-full"></div>
                     ) : (
                         <div></div>

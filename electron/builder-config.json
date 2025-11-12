@@ -1,0 +1,12 @@
+{
+  "appId": "com.tulika.drawingapp",
+  "productName": "Tulika Drawing App",
+  "files": ["out/**/*", "electron/**/*"],
+  "directories": {
+    "buildResources": "assets",
+    "output": "dist"
+  },
+  "mac": { "category": "public.app-category.graphics-design" },
+  "win": { "target": "nsis" },
+  "linux": { "target": "AppImage" }
+}

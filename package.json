@@ -5,7 +5,7 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
-    "build:web": "next build && next export",
+"build:web": "next build",
     "start": "next start",
     "lint": "next lint",
 
@@ -14,6 +14,12 @@
     "package:desktop": "npm run build:web && electron-builder"
 
   },
+  "build": {
+  "directories": {
+    "output": "release"
+  }
+}
+,
   "dependencies": {
     "@ffmpeg/core": "^0.12.4",
     "@ffmpeg/ffmpeg": "^0.12.9",
